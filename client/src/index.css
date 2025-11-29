@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  /* font-family: "Rubik", sans-serif; */
+  /* font-family: "Archivo", sans-serif; */
+  /* font-family: "Lexend", sans-serif; */
+  /* font-family: "Inter", sans-serif; */
+   /* font-family: "Noto Sans", sans-serif; */
+   font-family: "Inter", sans-serif;
+
+
+  font-optical-sizing: auto;
+}
