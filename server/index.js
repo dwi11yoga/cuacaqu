@@ -10,26 +10,26 @@ const corsOption = {
 };
 app.use(cors(corsOption));
 
-app.get("/api", (req, res) => {
-  res.json({
-    fruits: ["apple", "orange", "banana"],
-  });
-});
-
 // untuk halaman today
 app.get("/weather-today", async (req, res) => {
   try {
+    // jika fontend mengirim kode lokasi, gunakan. jika tidak, gunakan kode kemayoran, jakpus
+    const adm4 = (req.query.code || "").replaceAll('"', "");
+    let url = "";
+    if (adm4 && adm4.split(".").length === 4) {
+      url = `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${adm4}`;
+    } else {
+      url = "https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=31.71.03.1001";
+    }
+
     // dapatkan data dari api
-    const response = await axios.get(
-      "https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=33.18.13.2007"
-    );
+    const response = await axios.get(url);
 
     // proses data
     const weatherData = response.data.data[0].cuaca;
     // kirim metadata
     const metadata = {
-      shortLocation: `${response.data.lokasi.kecamatan}, ${response.data.lokasi.kotkab}`,
-      longLocation: `${response.data.lokasi.desa}, ${response.data.lokasi.kecamatan}, ${response.data.lokasi.kotkab}`,
+      location: `${response.data.lokasi.kecamatan}, ${response.data.lokasi.kotkab}`,
       // tanggal analisis
       analysisDate: new Date(
         weatherData[0][0].analysis_date
@@ -37,8 +37,6 @@ app.get("/weather-today", async (req, res) => {
         year: "numeric",
         month: "long",
         day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
       }),
     };
     // dapatkan detail suhu
@@ -90,7 +88,7 @@ app.get("/weather-today", async (req, res) => {
     const combinedWeatherData = weatherData[0].concat(weatherData[1]);
     // kemudian ambil 5 data paling awal (kecuali data 0)
     // kemudian ambil data yang diperlukan pakai map()
-    const upcomingHour = combinedWeatherData.slice(1, 6).map((item) => ({
+    const upcomingHour = combinedWeatherData.slice(0, 5).map((item) => ({
       // ubah waktu jadi waktu lokal
       time: new Date(item.datetime).toLocaleTimeString("id-ID", {
         hour: "2-digit",
@@ -98,15 +96,6 @@ app.get("/weather-today", async (req, res) => {
       }),
       weather: item.weather_desc,
       temp: item.t,
-    }));
-
-    // Data curah hujan (untuk grafik)
-    const precipitation = combinedWeatherData.slice(0, 5).map((item) => ({
-      // ubah waktu jadi waktu lokal
-      time: new Date(item.datetime).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
       precipitation: item.tp,
     }));
 
@@ -119,6 +108,7 @@ app.get("/weather-today", async (req, res) => {
       });
       const minTemp = Math.min(...data.map((item) => item.t));
       const maxTemp = Math.max(...data.map((item) => item.t));
+
       // hitung nilai semua precipitation dalam array data, kemudian kurangi 0 dibelakang koma dengan toFixed
       const precipitationTotal = data
         .reduce((sum, item) => sum + item.tp, 0)
@@ -152,9 +142,140 @@ app.get("/weather-today", async (req, res) => {
       metadata,
       today,
       upcomingHour,
-      precipitation,
       upcomingDays,
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// fungsi untuk mendapat data prediksi cuaca
+app.get("/weather-prediction", async (req, res) => {
+  try {
+    // ambil data perkiraan cuaca dari api bmkg
+    const response = await axios.get(
+      "https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=31.71.03.1001"
+    );
+
+    // PROSES DATA
+    const data = response.data;
+    // dapatkan metadata
+    // kirim metadata
+    const metadata = {
+      location: `${data.lokasi.kecamatan}, ${data.lokasi.kotkab}`,
+      // tanggal analisis
+      analysisDate: new Date(
+        data.data[0].cuaca[0][0].analysis_date
+      ).toLocaleDateString("id-ID", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    };
+
+    // filter data cuaca hari ini dan beberapa hari kedepan
+    function translateCompass(windDirection) {
+      switch (windDirection) {
+        case "E":
+          return {
+            short: "T",
+            long: "Timur"
+          };
+        case "SE":
+          return {
+            short: "TG",
+            long: "Tenggara"
+          };
+        case "S":
+          return {
+            short: "S",
+            long: "Selatan"
+          };
+        case "SW":
+          return {
+            short: "BD",
+            long: "Barat Daya"
+          };
+        case "W":
+          return {
+            short: "B",
+            long: "Barat"
+          };
+        case "NW":
+          return {
+            short: "BL",
+            long: "Barat Laut"
+          };
+        case "N":
+          return {
+            short: "U",
+            long: "Utara"
+          };
+        case "NE":
+          return {
+            short: "TL",
+            long: "Timur Laut"
+          };
+        default:
+          return windDir;
+      }
+    }
+    
+    const prediction = data.data[0].cuaca.map((day) =>
+      day.map((item) => ({
+        date: new Date(item.datetime).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+        }),
+        time: new Date(item.datetime).toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        weather: item.weather_desc,
+        temp: item.t,
+        humidity: item.hu,
+        precipitation: item.tp,
+        visibility: item.vs_text.replace(" ", "").replace(" km", ""),
+        cloudCover: item.tcc,
+        windSpeed: item.ws,
+        windDir: translateCompass(item.wd)
+      }))
+    );
+
+    // kirim data ke frontend
+    res.json({
+      // data,
+      metadata,
+      prediction,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// fungsi untuk mendapat data wilayah indonesia
+app.get("/location", async (req, res) => {
+  try {
+    // dapatkan kode yang didapat oleh pengguna
+    const code = req.query.code.replaceAll('"', "") || "";
+
+    var url = "";
+    if (code === "") {
+      // berarti mengambil data provinsi
+      url = "https://wilayah.id/api/provinces.json";
+    } else if (code.split(".").length === 1) {
+      // berarti mengambil data kabupaten
+      url = `https://wilayah.id/api/regencies/${code}.json`;
+    } else if (code.split(".").length === 2) {
+      // berarti mengambil data kecamatan
+      url = `https://wilayah.id/api/districts/${code}.json`;
+    } else if (code.split(".").length === 3) {
+      // berarti mengambil data kecamatan
+      url = `https://wilayah.id/api/villages/${code}.json`;
+    }
+
+    const response = await axios.get(url);
+    res.json(response.data.data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
