@@ -152,10 +152,16 @@ app.get("/weather-today", async (req, res) => {
 // fungsi untuk mendapat data prediksi cuaca
 app.get("/weather-prediction", async (req, res) => {
   try {
+    const adm4 = (req.query.code || "").replaceAll('"', "");
+    let url = "";
+    if (adm4 && adm4.split(".").length === 4) {
+      url = `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${adm4}`;
+    } else {
+      url = "https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=31.71.03.1001";
+    }
+
     // ambil data perkiraan cuaca dari api bmkg
-    const response = await axios.get(
-      "https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=31.71.03.1001"
-    );
+    const response = await axios.get(url);
 
     // PROSES DATA
     const data = response.data;
@@ -179,48 +185,48 @@ app.get("/weather-prediction", async (req, res) => {
         case "E":
           return {
             short: "T",
-            long: "Timur"
+            long: "Timur",
           };
         case "SE":
           return {
             short: "TG",
-            long: "Tenggara"
+            long: "Tenggara",
           };
         case "S":
           return {
             short: "S",
-            long: "Selatan"
+            long: "Selatan",
           };
         case "SW":
           return {
             short: "BD",
-            long: "Barat Daya"
+            long: "Barat Daya",
           };
         case "W":
           return {
             short: "B",
-            long: "Barat"
+            long: "Barat",
           };
         case "NW":
           return {
             short: "BL",
-            long: "Barat Laut"
+            long: "Barat Laut",
           };
         case "N":
           return {
             short: "U",
-            long: "Utara"
+            long: "Utara",
           };
         case "NE":
           return {
             short: "TL",
-            long: "Timur Laut"
+            long: "Timur Laut",
           };
         default:
           return windDir;
       }
     }
-    
+
     const prediction = data.data[0].cuaca.map((day) =>
       day.map((item) => ({
         date: new Date(item.datetime).toLocaleDateString("id-ID", {
@@ -238,7 +244,7 @@ app.get("/weather-prediction", async (req, res) => {
         visibility: item.vs_text.replace(" ", "").replace(" km", ""),
         cloudCover: item.tcc,
         windSpeed: item.ws,
-        windDir: translateCompass(item.wd)
+        windDir: translateCompass(item.wd),
       }))
     );
 

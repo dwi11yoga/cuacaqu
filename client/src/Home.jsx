@@ -8,10 +8,12 @@ import { ResponsiveLine } from "@nivo/line";
 import Cookies from "js-cookie";
 
 // import komponen
-import Menu from "./components/Menu";
+import Navbar from "./components/Navbar";
 import Skeleton from "./components/Skeleton";
 import Clock from "./components/Clock";
-import WeatherIcon from "./components/WeatherIcon";
+import weatherIcon from "./components/WeatherIcon";
+import Credit from "./components/Credit";
+import LocationSelector from "./components/LocationSelector";
 
 // icon lucide react
 import {
@@ -65,10 +67,10 @@ export default function App() {
   return (
     <div className="flex bg-neutral-50">
       {/* menu */}
-      <Menu />
+      <Navbar title={"Cuaca hari ini"} />
 
       {/* tampilan utama */}
-      <div className="grid grid-cols-5 gap-4 h-screen p-[5vh]">
+      <div className="ml-16 grid grid-cols-5 gap-4 h-screen p-[5vh]">
         {/* info cuaca hari ini */}
         <div className="col-span-2 h-[100vh-10vh] rounded-xl overflow-hidden relative">
           <WeatherOverview
@@ -84,9 +86,7 @@ export default function App() {
           <WeatherDetail weather={weather} />
 
           {/* prediksi cuaca beberapa jam kedepan */}
-          <UpcomingHours
-            weather={weather}
-          />
+          <UpcomingHours weather={weather} />
 
           {/* grafik curah hujan */}
           <PrecipitationGraph data={weather.upcomingHour || []} />
@@ -95,7 +95,7 @@ export default function App() {
           <UpcomingDays weather={weather} />
 
           {/* sumber data */}
-          <Source weather={weather} />
+          <Credit metadata={weather.metadata} />
         </div>
       </div>
     </div>
@@ -103,72 +103,11 @@ export default function App() {
 }
 
 // elemen yang menampilkan overview cuaca
-function WeatherOverview({
-  weather,
-  currentVillage,
-  setCurrentVillage,
-}) {
+function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
   // state untuk menapilkan form ganti lokasi
-  const [openLocationChanger, setOpenLocationChanger] = useState(false);
-  // state untuk menampung data lokasi
-  const [provinceList, setProvinceList] = useState([]);
-  const [regencyList, setRegencyList] = useState([]);
-  const [districList, setDistricList] = useState([]);
-  const [villageList, setVillageList] = useState([]);
-
-  // lokasi saat ini
-  const loc = Cookies.get("location").split(".");
-  const [currentProvince, setCurrentProvince] = useState(loc ? loc[0] : "31");
-  const [currentRegency, setCurrentRegency] = useState(
-    loc ? `${loc[0]}.${loc[1]}` : "31.71"
-  );
-  const [currentDistric, setCurrentDistric] = useState(
-    loc ? `${loc[0]}.${loc[1]}.${loc[2]}` : "31.71.03"
-  );
-  // data village disimpan pada parent
-
-  // fungsi ambil data dari backend
-  async function fetchLocation(code = "") {
-    const response = await axios.get(
-      `http://localhost:8080/location?code=${code}`
-    );
-    return response.data;
-  }
-
-  // ambil daftar provinsi
-  useEffect(() => {
-    fetchLocation().then((data) => setProvinceList(data));
-  }, []);
-
-  // ambil daftar kabupaten, dijalankan jika isi currentprovince berubah
-  useEffect(() => {
-    if (!currentProvince) return;
-    fetchLocation(currentProvince).then((data) => {
-      setRegencyList(data);
-      setDistricList([]);
-      setVillageList([]);
-      // setCurrentRegency("");
-      // setCurrentDistric("");
-    });
-  }, [currentProvince]);
-
-  // ambil data kecamatan, dijalankan saat data kabupaten berubah
-  useEffect(() => {
-    if (!currentRegency) return;
-    fetchLocation(currentRegency).then((data) => {
-      setDistricList(data);
-      setVillageList([]);
-      // setCurrentDistric("");
-    });
-  }, [currentRegency]);
-
-  // ambil data desa, dijalankan saat data kecamatan berubah
-  useEffect(() => {
-    if (!currentDistric) return;
-    fetchLocation(currentDistric).then((data) => {
-      setVillageList(data);
-    });
-  }, [currentDistric]);
+  const [openLocationSelector, setOpenLocationSelector] = useState(false);
+  // state untuk menampilkan/sembunyikan owner (sumber) foto
+  const [openCredit, setOpenCredit] = useState(false);
 
   // fungsi untuk memilih background cuaca
   function weatherBackground(weather) {
@@ -474,7 +413,7 @@ function WeatherOverview({
   }
 
   // dapatkan ikon dan keterangan cuaca
-  const weatherCondition = WeatherIcon(
+  const weatherCondition = weatherIcon(
     weather.today ? weather.today.weather : 0,
     new Date().getHours()
   );
@@ -498,14 +437,22 @@ function WeatherOverview({
       />
       {/* info gambar */}
       {getWeatherBackground.owner && (
-        <div className="absolute top-5 right-5 bg-black bg-opacity-70 rounded-lg text-white text-sm p-2 flex items-center gap-1">
-          <div>
-            Photo by{" "}
-            <a href={getWeatherBackground.ownerURL}>
-              {getWeatherBackground.owner}
-            </a>{" "}
-            on <a href={getWeatherBackground.backgroundURL}>Unsplash</a>
-          </div>
+        <div
+          onMouseEnter={() => setOpenCredit(true)}
+          onMouseLeave={() => setOpenCredit(false)}
+          className={`absolute top-5 right-5 bg-black bg-opacity-70 rounded-full text-white text-sm p-3 flex items-center gap-1 transition-all ease-out duration-300 ${
+            openCredit ? "" : "opacity-70"
+          }`}
+        >
+          {openCredit && (
+            <div>
+              Photo by{" "}
+              <a href={getWeatherBackground.ownerURL}>
+                {getWeatherBackground.owner}
+              </a>{" "}
+              on <a href={getWeatherBackground.backgroundURL}>Unsplash</a>
+            </div>
+          )}
           <Info size={16} />
         </div>
       )}
@@ -530,101 +477,18 @@ function WeatherOverview({
         <div className="flex justify-between items-end">
           <div className="relative">
             <div
-              onClick={() => setOpenLocationChanger(!openLocationChanger)}
+              onClick={() => setOpenLocationSelector(!openLocationSelector)}
               className="hover:underline hover:underline-offset-4 hover:decoration-2 cursor-pointer"
             >
               {weather.metadata ? weather.metadata.location : "..."}
             </div>
 
-            {openLocationChanger && (
-              <div className="absolute bottom-10 bg-neutral-50 shadow-sm rounded-lg text-black p-4 space-y-2 min-w-56">
-                {/* title */}
-                <div className="mb-1 flex items-center gap-1">
-                  <MapPinPen size={20} />
-                  Ubah lokasi
-                </div>
-
-                {/* select provinsi */}
-                {provinceList.length > 0 ? (
-                  <select
-                    name="selectProvince"
-                    id="selectProvince"
-                    value={currentProvince}
-                    onChange={(e) => {
-                      setCurrentProvince(e.target.value);
-                    }}
-                    className="w-full px-3 py-2.5 rounded-md cursor-pointer bg-white border border-neutral-300"
-                  >
-                    <option value="">Pilih</option>
-                    {provinceList.map((province) => (
-                      <option value={province.code}>{province.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <Skeleton height={"2rem"} />
-                )}
-
-                {/* Select kabupaten */}
-                {regencyList.length > 0 ? (
-                  <select
-                    name="selectRegency"
-                    id="selectRegency"
-                    value={currentRegency}
-                    onChange={(e) => {
-                      setCurrentRegency(e.target.value);
-                    }}
-                    className="w-full px-3 py-2.5 rounded-md cursor-pointer bg-white border border-neutral-300"
-                  >
-                    <option value="">Pilih</option>
-                    {regencyList.map((regency) => (
-                      <option value={regency.code}>{regency.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <Skeleton height={"2rem"} />
-                )}
-
-                {/* select kecamatan */}
-                {districList.length > 0 ? (
-                  <select
-                    name="selectDistric"
-                    id="selectDistric"
-                    value={currentDistric}
-                    onChange={(e) => {
-                      setCurrentDistric(e.target.value);
-                    }}
-                    className="w-full px-3 py-2.5 rounded-md cursor-pointer bg-white border border-neutral-300"
-                  >
-                    <option value="">Pilih</option>
-                    {districList.map((subDistrics) => (
-                      <option value={subDistrics.code}>
-                        {subDistrics.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <Skeleton height={"2rem"} />
-                )}
-
-                {/* select desa */}
-                {villageList.length > 0 ? (
-                  <select
-                    name="selectVillage"
-                    id="selectVillage"
-                    value={currentVillage}
-                    onChange={(e) => {
-                      setCurrentVillage(e.target.value);
-                    }}
-                    className="w-full px-3 py-2.5 rounded-md cursor-pointer bg-white border border-neutral-300"
-                  >
-                    <option value="">Pilih</option>
-                    {villageList.map((village) => (
-                      <option value={village.code}>{village.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <Skeleton height={"2rem"} />
-                )}
+            {openLocationSelector && (
+              <div className="absolute bottom-10">
+                <LocationSelector
+                  currentVillage={currentVillage}
+                  setCurrentVillage={setCurrentVillage}
+                />
               </div>
             )}
           </div>
@@ -746,10 +610,7 @@ function UpcomingHours({ weather }) {
         {/* perulangan waktu */}
         {weather.upcomingHour ? (
           weather.upcomingHour.map((item) => {
-            const Icon = WeatherIcon(
-              item ? item.weather : 0,
-              item.time
-            ).icon;
+            const Icon = weatherIcon(item ? item.weather : 0, item.time).icon;
             return (
               <div className="flex justify-between items-center py-2">
                 <div className="flex items-center gap-1">
@@ -864,7 +725,7 @@ function UpcomingDays({ weather }) {
       <div className="divide-y divide-solid">
         {weather.upcomingDays ? (
           weather.upcomingDays.map((item, i) => {
-            const upcomingWeather = WeatherIcon(item.weather, 12);
+            const upcomingWeather = weatherIcon(item.weather, 12);
             return (
               <div className="py-2">
                 <div className="flex justify-between items-center">
@@ -916,24 +777,6 @@ function UpcomingDays({ weather }) {
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// sumber
-function Source({ weather }) {
-  return (
-    <div className="col-span-2 text-sm italic text-neutral-800">
-      <div>
-        Data prediksi cuaca diperoleh dari Badan Meteorologi, Klimatologi, dan
-        Geofisika
-        {weather.metadata
-          ? `, dianalisis pada ${weather.metadata.analysisDate.replaceAll(
-              ".",
-              ":"
-            )}`
-          : ""}
       </div>
     </div>
   );
