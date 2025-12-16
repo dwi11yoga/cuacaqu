@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import "./App.css";
 // import axios agar bisa terhubung ke backend
 import axios from "axios";
-// import nivo/line untuk membuat grafik
-import { ResponsiveLine } from "@nivo/line";
 // import ini untuk mengelola cookie
 import Cookies from "js-cookie";
 
@@ -71,7 +69,7 @@ export default function App() {
         {/* Konten */}
         <div className="col-span-2">
           <div className="mb-5">
-            <h1 className="font-bold text-2xl">Prediksi Cuaca</h1>
+            <h1 className="font-bold text-3xl">Prediksi Cuaca</h1>
             {weather.metadata ? (
               <div className="text-sm">
                 {new Date().toLocaleDateString("id-ID", {
@@ -115,7 +113,7 @@ export default function App() {
                             onClick={() =>
                               setOpenLocationSelector(!openLocationSelector)
                             }
-                            className="flex items-center gap-2 hover:bg-blue-100 py-0.5 px-2 rounded-full cursor-pointer"
+                            className="flex items-center gap-2 hover:bg-neutral-300 py-0.5 px-2 rounded-full cursor-pointer"
                           >
                             {weather.metadata.location}
                             <RefreshCcw size={20} />
@@ -138,7 +136,7 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="divide-y divide-solid">
+                  <div className="divide-y divide-solid bg-neutral-100 rounded-xl overflow-hidden">
                     {day.map((item, secondIndex) => {
                       return firstIndex == 0 && secondIndex == 0 ? (
                         // cuaca di jam saat ini
@@ -174,10 +172,11 @@ export default function App() {
   );
 }
 
+// cuaca hari ini
 function CurrentWeather({ item }) {
   const Icon = WeatherIcon(item.weather, item.time).icon;
   return (
-    <div className="flex items-center justify-between bg-blue-200 p-4">
+    <div className="flex items-center justify-between bg-neutral-900 text-white p-4">
       <div className="flex items-center gap-4">
         <div title={item.weather}>
           <Icon size={30} />
@@ -227,7 +226,12 @@ function SimpleWeather({
       onClick={() =>
         handleOpenDetail(String(firstIndex + 1) + String(secondIndex))
       }
-      className="p-4 hover:bg-blue-100 space-y-3 cursor-pointer"
+      className={`p-4 hover:bg-neutral-300 space-y-3 cursor-pointer ${
+        // ubah warna menjadi lebih gelap jika item diklik
+        openDetail[String(firstIndex + 1) + String(secondIndex)]
+          ? "bg-neutral-200"
+          : ""
+      }`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -238,7 +242,7 @@ function SimpleWeather({
         </div>
         <div className="flex gap-1 text-lg items-center">{item.temp}°</div>
       </div>
-      {openDetail[String(firstIndex + 1) + String(secondIndex)] == true && (
+      {openDetail[String(firstIndex + 1) + String(secondIndex)] && (
         <div
           key={secondIndex}
           id={String(firstIndex + 1) + String(secondIndex)}

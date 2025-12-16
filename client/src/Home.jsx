@@ -40,6 +40,7 @@ import {
   Calendar,
   ChevronRight,
   MapPinPen,
+  RefreshCcw,
 } from "lucide-react";
 
 export default function App() {
@@ -108,6 +109,8 @@ function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
   const [openLocationSelector, setOpenLocationSelector] = useState(false);
   // state untuk menampilkan/sembunyikan owner (sumber) foto
   const [openCredit, setOpenCredit] = useState(false);
+  // state untuk menampilkan/sembunyikan ikon ganti lokasi
+  const [showChangeLocation, setShowChangeLocation] = useState(false);
 
   // fungsi untuk memilih background cuaca
   function weatherBackground(weather) {
@@ -440,19 +443,21 @@ function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
         <div
           onMouseEnter={() => setOpenCredit(true)}
           onMouseLeave={() => setOpenCredit(false)}
-          className={`absolute top-5 right-5 bg-black bg-opacity-70 rounded-full text-white text-sm p-3 flex items-center gap-1 transition-all ease-out duration-300 ${
+          className={`absolute top-5 right-5 bg-black bg-opacity-70 rounded-full text-white text-sm p-3 flex items-center gap-1 ${
             openCredit ? "" : "opacity-70"
           }`}
         >
-          {openCredit && (
-            <div>
-              Photo by{" "}
-              <a href={getWeatherBackground.ownerURL}>
-                {getWeatherBackground.owner}
-              </a>{" "}
-              on <a href={getWeatherBackground.backgroundURL}>Unsplash</a>
-            </div>
-          )}
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-out ${
+              openCredit ? "" : "hidden"
+            }`}
+          >
+            Photo by{" "}
+            <a href={getWeatherBackground.ownerURL}>
+              {getWeatherBackground.owner}
+            </a>{" "}
+            on <a href={getWeatherBackground.backgroundURL}>Unsplash</a>
+          </div>
           <Info size={16} />
         </div>
       )}
@@ -478,9 +483,13 @@ function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
           <div className="relative">
             <div
               onClick={() => setOpenLocationSelector(!openLocationSelector)}
-              className="hover:underline hover:underline-offset-4 hover:decoration-2 cursor-pointer"
+              className="hover:underline hover:underline-offset-4 hover:decoration-2 cursor-pointer flex gap-2 items-center"
+              title="Ubah lokasi"
+              onMouseOver={() => setShowChangeLocation(true)}
+              onMouseLeave={() => setShowChangeLocation(false)}
             >
               {weather.metadata ? weather.metadata.location : "..."}
+              {showChangeLocation && <RefreshCcw size={20} />}
             </div>
 
             {openLocationSelector && (
@@ -499,155 +508,135 @@ function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
   );
 }
 
+// layout dari komponen detail cuaca, dll
+function ComponentLayout({ title, children }) {
+  return (
+    <div className="h-full space-y-1 bg-neutral-100 shadow-sm p-5 rounded-xl">
+      <div className="font-semibold text-lg">{title}</div>
+      <div className="divide-y divide-solid h-full">{children}</div>
+    </div>
+  );
+}
+
+// componen item detail cuaca
+// eslint-disable-next-line no-unused-vars
+function WeatherDetailItem({ Icon, title, value, unit }) {
+  return value !== undefined || value !== null ? (
+    // jika value ada nilainya, maka tampilkan data
+    <div className="flex justify-between items-center py-2">
+      <div className="flex items-center gap-1">
+        <Icon width={16} height={16} />
+        {title}
+      </div>
+      <div>
+        <span className="font-bold text-xl">{value}</span>
+        <span className="text-sm">{unit}</span>
+      </div>
+    </div>
+  ) : (
+    // jika value tidak ada nilainya, maka tampilkan skeleton (loading)
+    <div className="flex justify-between items-center gap-2 py-4">
+      <Skeleton width={"70%"} />
+      <Skeleton width={"20%"} />
+    </div>
+  );
+}
+
 // detail cuaca
 function WeatherDetail({ weather }) {
+  console.log(weather.today?.precipitation);
+
   return (
-    <div className="h-full space-y-3 border border-neutral-200 p-4 rounded-lg">
-      <div className="font-semibold text-lg">Detail Cuaca</div>
-      {weather.today ? (
-        <div className="divide-y divide-solid">
-          {/* kelembapan */}
-          <div className="flex justify-between items-center pb-2">
-            <div className="flex items-center gap-1">
-              <Droplet width={16} height={16} />
-              Kelembapan
-            </div>
-            <div>
-              <span className="font-bold text-xl">
-                {weather.today.humidity}
-              </span>
-              <span className="text-sm">%</span>
-            </div>
-          </div>
-          {/* Curah hujan */}
-          <div className="flex justify-between items-center py-2">
-            <div className="flex items-center gap-1">
-              <Umbrella width={16} height={16} />
-              Curah hujan
-            </div>
-            <div>
-              <span className="font-bold text-xl">
-                {weather.today.precipitation}
-              </span>
-              <span className="text-sm">mm</span>
-            </div>
-          </div>
-          {/* tutupan awan */}
-          <div className="flex justify-between items-center py-2">
-            <div className="flex items-center gap-1">
-              <Cloud width={16} height={16} />
-              Tutupan awan
-            </div>
-            <div>
-              <span className="font-bold text-xl">
-                {weather.today.cloudCover}
-              </span>
-              <span className="text-sm">%</span>
-            </div>
-          </div>
-
-          {/* jarak pandang */}
-          <div className="flex justify-between items-center py-2">
-            <div className="flex items-center gap-1">
-              <Eye width={16} height={16} />
-              Jarak pandang
-            </div>
-            <div>
-              <span className="font-bold text-xl">
-                {weather.today.visibility}
-              </span>
-              <span className="text-sm">km</span>
-            </div>
-          </div>
-
-          {/* Kecepatan angin */}
-          <div className="flex justify-between items-center py-2">
-            <div className="flex items-center gap-1">
-              <Wind width={16} height={16} />
-              Kecepatan angin
-            </div>
-            <div>
-              <span className="font-bold text-xl">
-                {weather.today.windSpeed}
-              </span>
-              <span className="text-sm">km/j</span>
-            </div>
-          </div>
-
-          {/* Arah angin */}
-          <div className="flex justify-between items-center py-2">
-            <div className="flex items-center gap-1">
-              <Compass width={16} height={16} />
-              Arah angin dari
-            </div>
-            <div className="font-bold text-xl">{weather.today.windDir}</div>
-          </div>
-        </div>
-      ) : (
-        <div className="divide-y divide-solid">
-          <div className="flex justify-between items-center gap-2 pt-2 pb-4">
-            <Skeleton width={"70%"} />
-            <Skeleton width={"20%"} />
-          </div>
-          {[...Array(5)].map(() => (
-            <div className="flex justify-between items-center gap-2 py-4">
-              <Skeleton width={"70%"} />
-              <Skeleton width={"20%"} />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <ComponentLayout title={"Detail Cuaca"}>
+      {/* kelembapan */}
+      <WeatherDetailItem
+        Icon={Droplet}
+        title={"Kelembapan"}
+        value={weather.today?.humidity}
+        unit={"%"}
+      />
+      {/* Curah hujan */}
+      <WeatherDetailItem
+        Icon={Umbrella}
+        title={"Curah hujan"}
+        value={weather.today?.precipitation}
+        unit={"mm"}
+      />
+      {/* tutupan awan */}
+      <WeatherDetailItem
+        Icon={Cloud}
+        title={"Tutupan awan"}
+        value={weather.today?.cloudCover}
+        unit={"%"}
+      />
+      {/* jarak pandang */}
+      <WeatherDetailItem
+        Icon={Eye}
+        title={"Jarak pandang"}
+        value={weather.today?.visibility}
+        unit={"km"}
+      />
+      {/* Kecepatan angin */}
+      <WeatherDetailItem
+        Icon={Wind}
+        title={"Kecepatan angin"}
+        value={weather.today?.windSpeed}
+        unit={"km/j"}
+      />
+      {/* Arah angin */}
+      <WeatherDetailItem
+        Icon={Compass}
+        title={"Arah angin"}
+        value={weather.today?.windDir}
+      />
+    </ComponentLayout>
   );
 }
 
 // prediksi cuaca beberapa jam kedepan
 function UpcomingHours({ weather }) {
   return (
-    <div className="h-full space-y-1 border border-neutral-200 p-4 rounded-lg">
-      <div className="font-semibold text-lg">Prakiraan Cuaca Kedepan</div>
-      <div className="divide-y divide-solid">
-        {/* perulangan waktu */}
-        {weather.upcomingHour ? (
-          weather.upcomingHour.map((item) => {
-            const Icon = weatherIcon(item ? item.weather : 0, item.time).icon;
-            return (
-              <div className="flex justify-between items-center py-2">
-                <div className="flex items-center gap-1">
-                  <Icon size={30} />
-                  <div>
-                    <div>{item.time.replaceAll(".", ":")}</div>
-                    <div className="text-xs">{item.weather}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 font-semibold text-lg">
-                  {item.temp}°
+    <ComponentLayout title={"Prakiraan Cuaca Kedepan"}>
+      {/* perulangan waktu */}
+      {weather.upcomingHour ? (
+        weather.upcomingHour.map((item) => {
+          const Icon = weatherIcon(item ? item.weather : 0, item.time).icon;
+          return (
+            <div className="flex justify-between items-center py-2">
+              <div className="flex items-center gap-1">
+                <Icon size={30} />
+                <div>
+                  <div>{item.time.replaceAll(".", ":")}</div>
+                  <div className="text-xs">{item.weather}</div>
                 </div>
               </div>
-            );
-          })
-        ) : (
-          <div className="divide-y divide-solid">
-            <div className="flex justify-between items-center gap-2 pt-2 pb-3">
+              <div className="flex items-center gap-1 font-semibold text-lg">
+                {item.temp}°
+              </div>
+            </div>
+          );
+        })
+      ) : (
+        <div className="divide-y divide-solid">
+          <div className="flex justify-between items-center gap-2 pt-2 pb-3">
+            <div className="space-y-2">
+              <Skeleton width={"10rem"} />
+              <Skeleton width={"6rem"} height={"1rem"} />
+            </div>
+            <Skeleton width={"20%"} />
+          </div>
+          {[...Array(4)].map(() => (
+            <div className="flex justify-between items-center gap-2 py-3">
               <div className="space-y-2">
                 <Skeleton width={"10rem"} />
                 <Skeleton width={"6rem"} height={"1rem"} />
               </div>
               <Skeleton width={"20%"} />
             </div>
-            {[...Array(4)].map(() => (
-              <div className="flex justify-between items-center gap-2 py-3">
-                <div className="space-y-2">
-                  <Skeleton width={"10rem"} />
-                  <Skeleton width={"6rem"} height={"1rem"} />
-                </div>
-                <Skeleton width={"20%"} />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+          ))}
+        </div>
+      )}
+    </ComponentLayout>
   );
 }
 
@@ -673,111 +662,101 @@ function PrecipitationGraph({ data }) {
   ];
 
   return (
-    <div className="col-span-1 h-full space-y-1 border border-neutral-200 p-4 rounded-lg">
-      <div className="font-semibold text-lg">
-        Curah Hujan <span className="font-normal">(mm)</span>
-      </div>
-      <div className="h-full w-full">
-        <ResponsiveLine
-          data={graphData}
-          curve="cardinal"
-          margin={{ top: 10, right: 15, bottom: 50, left: 30 }}
-          xScale={{ type: "point" }}
-          yScale={{
-            type: "linear",
-            min: "0",
-            max: "30",
-            stacked: false,
-            reverse: false,
-          }}
-          axisBottom={{
-            orient: "bottom",
-            // legend: "Waktu",
-            legendOffset: 36,
-            legendPosition: "middle",
-          }}
-          axisLeft={{
-            orient: "left",
-            // legend: "Curah hujan (mm)",
-            legendOffset: -40,
-            legendPosition: "middle",
-            tickValues: 4,
-          }}
-          pointSize={10}
-          pointColor={{ theme: "background" }}
-          pointBorderWidth={2}
-          pointBorderColor={{ from: "serieColor" }}
-          enableArea={true}
-          areaOpacity={0.5}
-          colors={["#2563eb"]}
-          useMesh={true}
-        />
-      </div>
-    </div>
+    <ComponentLayout title={"Curah hujan"}>
+      <ResponsiveLine
+        data={graphData}
+        curve="cardinal"
+        margin={{ top: 10, right: 15, bottom: 50, left: 30 }}
+        xScale={{ type: "point" }}
+        yScale={{
+          type: "linear",
+          min: "0",
+          max: "30",
+          stacked: false,
+          reverse: false,
+        }}
+        axisBottom={{
+          orient: "bottom",
+          // legend: "Waktu",
+          legendOffset: 36,
+          legendPosition: "middle",
+        }}
+        axisLeft={{
+          orient: "left",
+          // legend: "Curah hujan (mm)",
+          legendOffset: -40,
+          legendPosition: "middle",
+          tickValues: 4,
+        }}
+        pointSize={10}
+        pointColor={{ theme: "background" }}
+        pointBorderWidth={2}
+        pointBorderColor={{ from: "serieColor" }}
+        enableArea={true}
+        areaOpacity={0.5}
+        colors={["#2563eb"]}
+        useMesh={true}
+      />
+    </ComponentLayout>
   );
 }
 
 // elemen perkiraan cuaca harian
 function UpcomingDays({ weather }) {
   return (
-    <div className="col-span-1 h-full space-y-1 border border-neutral-200 p-4 rounded-lg">
-      <div className="font-semibold text-lg">Prakiraan Cuaca Harian</div>
-      <div className="divide-y divide-solid">
-        {weather.upcomingDays ? (
-          weather.upcomingDays.map((item, i) => {
-            const upcomingWeather = weatherIcon(item.weather, 12);
-            return (
-              <div className="py-2">
-                <div className="flex justify-between items-center">
+    <ComponentLayout title={"Perkiraan Cuaca Harian"}>
+      {weather.upcomingDays ? (
+        weather.upcomingDays.map((item, i) => {
+          const upcomingWeather = weatherIcon(item.weather, 12);
+          return (
+            <div className="py-2">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-bold">{i === 0 ? "Besok" : "Lusa"}</div>
+                  <div className="font-light text-sm">{item.date}</div>
+                </div>
+                <div className="flex items-center text-right gap-1">
                   <div>
-                    <div className="font-bold">
-                      {i === 0 ? "Besok" : "Lusa"}
+                    <div className="font-bold text-xl flex items-center">
+                      {item.minTemp}°-{item.maxTemp}°
+                      <span title={`Cenderung ${upcomingWeather.desc}`}>
+                        <upcomingWeather.icon strokeWidth={2} />
+                      </span>
                     </div>
-                    <div className="font-light text-sm">{item.date}</div>
-                  </div>
-                  <div className="flex items-center text-right gap-1">
-                    <div>
-                      <div className="font-bold text-xl flex items-center">
-                        {item.minTemp}°-{item.maxTemp}°
-                        <span title={`Cenderung ${upcomingWeather.desc}`}>
-                          <upcomingWeather.icon strokeWidth={2} />
-                        </span>
-                      </div>
-                      <div className="text-sm font-light">
-                        Curah {item.precipitationTotal}
-                        <span className="text-xs">mm</span>
-                      </div>
+                    <div className="text-sm font-light">
+                      Curah {item.precipitationTotal}
+                      <span className="text-xs">mm</span>
                     </div>
                   </div>
                 </div>
               </div>
-            );
-          })
-        ) : (
-          <div className="divide-y divide-solid">
-            <div className="flex justify-between items-center gap-2 pt-2 pb-3">
-              <div className="space-y-2">
-                <Skeleton width={"6rem"} />
-                <Skeleton width={"10rem"} height={"0.7rem"} />
-              </div>
-              <div className="space-y-2">
-                <Skeleton width={"3rem"} />
-                <Skeleton width={"2rem"} height={"0.7rem"} />
-              </div>
             </div>
-            <div className="flex justify-between items-center gap-2 py-3">
-              <div className="space-y-2">
-                <Skeleton width={"6rem"} />
-                <Skeleton width={"10rem"} height={"0.7rem"} />
-              </div>
-              <div className="space-y-2">
-                <Skeleton width={"3rem"} />
-                <Skeleton width={"2rem"} height={"0.7rem"} />
-              </div>
+          );
+        })
+      ) : (
+        <div className="divide-y divide-solid">
+          <div className="flex justify-between items-center gap-2 pt-2 pb-3">
+            <div className="space-y-2">
+              <Skeleton width={"6rem"} />
+              <Skeleton width={"10rem"} height={"0.7rem"} />
+            </div>
+            <div className="space-y-2">
+              <Skeleton width={"3rem"} />
+              <Skeleton width={"2rem"} height={"0.7rem"} />
             </div>
           </div>
-        )}
-      </div>
-    </div>
+          <div className="flex justify-between items-center gap-2 py-3">
+            <div className="space-y-2">
+              <Skeleton width={"6rem"} />
+              <Skeleton width={"10rem"} height={"0.7rem"} />
+            </div>
+            <div className="space-y-2">
+              <Skeleton width={"3rem"} />
+              <Skeleton width={"2rem"} height={"0.7rem"} />
+            </div>
+          </div>
+        </div>
+      )}
+    </ComponentLayout>
   );
 }
