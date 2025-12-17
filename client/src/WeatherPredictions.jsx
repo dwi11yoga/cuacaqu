@@ -28,6 +28,10 @@ import {
 import Credit from "./components/Credit";
 
 export default function App() {
+  // set title untuk halaman ini
+  const pageTitle = "Prediksi cuaca";
+  document.title = `${pageTitle} | Cuacaqu`;
+
   // data lokasi desa
   const [currentVillage, setCurrentVillage] = useState(
     Cookies.get("location") || "31.71.03.1001"
@@ -60,115 +64,117 @@ export default function App() {
   }
 
   return (
-    <div className="flex bg-neutral-50">
+    <>
       {/* menu */}
-      <Navbar title={"Prediksi cuaca"} />
+      <Navbar title={pageTitle} />
 
-      <div className="grid grid-cols-4 my-8 w-full">
-        <div className=""></div>
-        {/* Konten */}
-        <div className="col-span-2">
-          <div className="mb-5">
-            <h1 className="font-bold text-3xl">Prediksi Cuaca</h1>
-            {weather.metadata ? (
-              <div className="text-sm">
-                {new Date().toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </div>
-            ) : (
-              <Skeleton width={"7rem"} />
-            )}
-          </div>
+      <div className="flex bg-neutral-50">
+        <div className="grid grid-cols-4 my-8 w-full">
+          <div className=""></div>
+          {/* Konten */}
+          <div className="md:col-span-2 col-span-4 md:mx-0 md:m-0 m-[3vh] md:mt-0 mt-16 mb-0">
+            <div className="mb-5">
+              <h1 className="font-bold text-3xl">Prediksi Cuaca</h1>
+              {weather.metadata ? (
+                <div className="text-sm">
+                  {new Date().toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </div>
+              ) : (
+                <Skeleton width={"7rem"} />
+              )}
+            </div>
 
-          {/* prediksi cuaca */}
-          <div className="space-y-6">
-            {weather.prediction ? (
-              weather.prediction.map((day, firstIndex) => (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    {/* judul */}
-                    <div className="font-semibold">
-                      {firstIndex == 0
-                        ? "Hari ini"
-                        : firstIndex == 1
-                        ? "Besok"
-                        : "Lusa"}
-                      {/* jika hari ini, jangan tampilkan tanggal */}
-                      {firstIndex != 0 ? (
-                        <span className="font-normal">, {day[0].date}</span>
+            {/* prediksi cuaca */}
+            <div className="space-y-6">
+              {weather.prediction ? (
+                weather.prediction.map((day, firstIndex) => (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      {/* judul */}
+                      <div className="font-semibold">
+                        {firstIndex == 0
+                          ? "Hari ini"
+                          : firstIndex == 1
+                          ? "Besok"
+                          : "Lusa"}
+                        {/* jika hari ini, jangan tampilkan tanggal */}
+                        {firstIndex != 0 ? (
+                          <span className="font-normal">, {day[0].date}</span>
+                        ) : (
+                          ""
+                        )}
+                      </div>
+
+                      {/* lokasi atau tanggal */}
+                      {firstIndex == 0 ? (
+                        // jika index pertama, tampilkan lokasi
+                        weather.metadata ? (
+                          <div className="relative">
+                            <div
+                              onClick={() =>
+                                setOpenLocationSelector(!openLocationSelector)
+                              }
+                              className="flex items-center gap-2 hover:bg-neutral-300 py-0.5 px-2 rounded-full cursor-pointer"
+                            >
+                              {weather.metadata.location}
+                              <RefreshCcw size={20} />
+                            </div>
+                            {openLocationSelector && (
+                              <div className="absolute top-10">
+                                <LocationSelector
+                                  currentVillage={currentVillage}
+                                  setCurrentVillage={setCurrentVillage}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <Skeleton width={"8rem"} />
+                        )
                       ) : (
+                        // selain itu tampilkan kosong
                         ""
                       )}
                     </div>
 
-                    {/* lokasi atau tanggal */}
-                    {firstIndex == 0 ? (
-                      // jika index pertama, tampilkan lokasi
-                      weather.metadata ? (
-                        <div className="relative">
-                          <div
-                            onClick={() =>
-                              setOpenLocationSelector(!openLocationSelector)
-                            }
-                            className="flex items-center gap-2 hover:bg-neutral-300 py-0.5 px-2 rounded-full cursor-pointer"
-                          >
-                            {weather.metadata.location}
-                            <RefreshCcw size={20} />
-                          </div>
-                          {openLocationSelector && (
-                            <div className="absolute top-10">
-                              <LocationSelector
-                                currentVillage={currentVillage}
-                                setCurrentVillage={setCurrentVillage}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <Skeleton width={"8rem"} />
-                      )
-                    ) : (
-                      // selain itu tampilkan kosong
-                      ""
-                    )}
+                    <div className="divide-y divide-solid bg-neutral-100 rounded-xl overflow-hidden">
+                      {day.map((item, secondIndex) => {
+                        return firstIndex == 0 && secondIndex == 0 ? (
+                          // cuaca di jam saat ini
+                          <CurrentWeather item={item} />
+                        ) : (
+                          // selain itu, gunakan tampilan lebih simpel
+                          <SimpleWeather
+                            item={item}
+                            openDetail={openDetail}
+                            handleOpenDetail={handleOpenDetail}
+                            firstIndex={firstIndex}
+                            secondIndex={secondIndex}
+                          />
+                        );
+                      })}
+                      {/* waktu yang akan datang */}
+                    </div>
                   </div>
+                ))
+              ) : (
+                <SkeletonSection />
+              )}
+            </div>
 
-                  <div className="divide-y divide-solid bg-neutral-100 rounded-xl overflow-hidden">
-                    {day.map((item, secondIndex) => {
-                      return firstIndex == 0 && secondIndex == 0 ? (
-                        // cuaca di jam saat ini
-                        <CurrentWeather item={item} />
-                      ) : (
-                        // selain itu, gunakan tampilan lebih simpel
-                        <SimpleWeather
-                          item={item}
-                          openDetail={openDetail}
-                          handleOpenDetail={handleOpenDetail}
-                          firstIndex={firstIndex}
-                          secondIndex={secondIndex}
-                        />
-                      );
-                    })}
-                    {/* waktu yang akan datang */}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <SkeletonSection />
-            )}
+            {/* credit */}
+            <div className="mt-3">
+              <Credit metadata={weather.metadata} />
+            </div>
           </div>
-
-          {/* credit */}
-          <div className="mt-3">
-            <Credit metadata={weather.metadata} />
-          </div>
+          <div className=""></div>
         </div>
-        <div className=""></div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -246,7 +252,7 @@ function SimpleWeather({
         <div
           key={secondIndex}
           id={String(firstIndex + 1) + String(secondIndex)}
-          className="grid grid-cols-3 gap-2 text-sm"
+          className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-2 text-sm"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">

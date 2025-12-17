@@ -9,6 +9,8 @@ import {
   Info,
   SlidersHorizontal,
   Sun,
+  Menu,
+  X,
 } from "lucide-react";
 
 // menu navbar
@@ -19,10 +21,18 @@ export default function Navbar({ title }) {
     setExtended(!extended);
   }
 
-  return extended ? (
-    <ExtendedNavbar title={title} handleExtendedNavbar={handleExtendedNavbar} />
-  ) : (
-    <NormalNavbar title={title} handleExtendedNavbar={handleExtendedNavbar} />
+  return (
+    <>
+      {extended ? (
+        <ExtendedNavbar
+          title={title}
+          handleExtendedNavbar={handleExtendedNavbar}
+        />
+      ) : (
+        <NormalNavbar title={title} handleExtendedNavbar={handleExtendedNavbar} />
+      )}
+      <MobileNavbar title={title} />
+    </>
   );
 }
 
@@ -84,7 +94,7 @@ function NormalNavbar({ title, handleExtendedNavbar }) {
     );
   }
   return (
-    <nav className="fixed bg-neutral-900 text-white p-2 flex flex-col items-center justify-between h-screen z-50">
+    <nav className="fixed hidden md:flex flex-col items-center justify-between bg-neutral-900 text-white p-2 h-screen z-50">
       <div className="flex flex-col items-center">
         <Link to="/" className="rotate-90 mt-10 -mx-2">
           Cuacaqu
@@ -100,6 +110,57 @@ function NormalNavbar({ title, handleExtendedNavbar }) {
         className="rounded-md p-1.5 hover:bg-neutral-700 cursor-pointer"
       >
         <ChevronRight />
+      </div>
+    </nav>
+  );
+}
+
+// tampilan navbar mobile
+function MobileNavbar({ title }) {
+  const [sidePanel, setSidePanel] = useState(false);
+  // tampilan link
+  // eslint-disable-next-line no-unused-vars
+  function LinkLayout({ url, id, name, Icon }) {
+    return (
+      <Link
+        to={url}
+        className={`flex items-center rounded-md py-3 px-3 space-x-2 ${
+          title == id ? "bg-neutral-200" : ""
+        } hover:bg-neutral-300`}
+      >
+        <Icon strokeWidth={1.5} />
+        <div className="">{name}</div>
+      </Link>
+    );
+  }
+
+  return (
+    <nav className="fixed md:hidden flex items-center justify-between bg-neutral-50 shadow-sm w-full p-4 z-50">
+      <div className="text-lg">Cuacaqu</div>
+      <div
+        onClick={() => setSidePanel(true)}
+        className="hover:bg-neutral-300 p-1.5 rounded-md cursor-pointer"
+      >
+        <Menu size={20} />
+      </div>
+
+      {/* menu */}
+      <div
+        className={`bg-neutral-50 shadow-sm fixed h-full w-3/4 top-0 py-4 px-5 space-y-4 transition-all duration-300 ${
+          sidePanel ? "right-0" : "-right-full"
+        }`}
+      >
+        <div className="flex justify-end">
+          <div
+            onClick={() => setSidePanel(false)}
+            className="hover:bg-neutral-300 p-1.5 rounded-md cursor-pointer"
+          >
+            <X size={20} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <MenuList LinkLayout={LinkLayout} />
+        </div>
       </div>
     </nav>
   );

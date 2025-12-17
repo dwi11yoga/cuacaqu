@@ -50,6 +50,10 @@ export default function App() {
     Cookies.get("location") || "31.71.03.1001"
   );
 
+  // set title untuk halaman ini
+  const pageTitle = "Cuaca hari ini";
+  document.title = `${pageTitle} | Cuacaqu`;
+
   // fungsi untuk mendapat data dari backend
   const fetchAPI = async () => {
     const response = await axios.get(
@@ -66,40 +70,41 @@ export default function App() {
   }, [currentVillage]);
 
   return (
-    <div className="flex bg-neutral-50">
+    <>
       {/* menu */}
-      <Navbar title={"Cuaca hari ini"} />
+      <Navbar title={pageTitle} />
+      <div className="flex bg-neutral-50">
+        {/* tampilan utama */}
+        <div className="md:ml-16 md:mt-0 mt-16 grid md:grid-cols-5 grid-cols-1 gap-4 md:max-h-screen md:p-[5vh] p-[3vh]">
+          {/* info cuaca hari ini */}
+          <div className="md:col-span-2 h-[100vh-10vh] rounded-xl overflow-hidden relative">
+            <WeatherOverview
+              weather={weather}
+              currentVillage={currentVillage}
+              setCurrentVillage={setCurrentVillage}
+            />
+          </div>
 
-      {/* tampilan utama */}
-      <div className="ml-16 grid grid-cols-5 gap-4 h-screen p-[5vh]">
-        {/* info cuaca hari ini */}
-        <div className="col-span-2 h-[100vh-10vh] rounded-xl overflow-hidden relative">
-          <WeatherOverview
-            weather={weather}
-            currentVillage={currentVillage}
-            setCurrentVillage={setCurrentVillage}
-          />
-        </div>
+          {/* detail cuaca & prediksi besok */}
+          <div className="md:col-span-3 grid grid-cols-2 md:gap-3 gap-4 md:overflow-y-scroll">
+            {/* detail cuaca */}
+            <WeatherDetail weather={weather} />
 
-        {/* detail cuaca & prediksi besok */}
-        <div className="col-span-3 grid grid-cols-2 gap-3 overflow-y-scroll">
-          {/* detail cuaca */}
-          <WeatherDetail weather={weather} />
+            {/* prediksi cuaca beberapa jam kedepan */}
+            <UpcomingHours weather={weather} />
 
-          {/* prediksi cuaca beberapa jam kedepan */}
-          <UpcomingHours weather={weather} />
+            {/* grafik curah hujan */}
+            <PrecipitationGraph data={weather.upcomingHour || []} />
 
-          {/* grafik curah hujan */}
-          <PrecipitationGraph data={weather.upcomingHour || []} />
+            {/* perkiraan cuaca harian */}
+            <UpcomingDays weather={weather} />
 
-          {/* perkiraan cuaca harian */}
-          <UpcomingDays weather={weather} />
-
-          {/* sumber data */}
-          <Credit metadata={weather.metadata} />
+            {/* sumber data */}
+            <Credit metadata={weather.metadata} />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -462,24 +467,26 @@ function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
         </div>
       )}
       {/* info cuaca */}
-      <div className="absolute w-full p-7 bottom-0 left-0 text-white space-y-4">
+      <div className="absolute w-full p-7 bottom-0 left-0 text-white md:space-y-4 space-y-2">
         <div className="space-y-1">
-          <div className="font-bold text-7xl">
+          <div className="font-bold md:text-7xl text-5xl">
             {weather.today ? weather.today.temp : "..."}°
           </div>
-          <div className="flex gap-3 font-semibold text-4xl">
+          <div className="flex items-center md:gap-3 gap-2 font-semibold md:text-4xl text-2xl">
             <weatherCondition.icon
+              className="md:size-11 size-8"
               strokeWidth={3}
-              size={40}
               width={43}
               height={41}
             />{" "}
             {weatherCondition.desc}
           </div>
         </div>
-        <div className="italic pr-10">{getRandomInstruction}</div>
+        <div className="italic md:text-base text-sm pr-10">
+          {getRandomInstruction}
+        </div>
 
-        <div className="flex justify-between items-end">
+        <div className="flex justify-between items-end md:text-base text-sm">
           <div className="relative">
             <div
               onClick={() => setOpenLocationSelector(!openLocationSelector)}
@@ -489,7 +496,12 @@ function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
               onMouseLeave={() => setShowChangeLocation(false)}
             >
               {weather.metadata ? weather.metadata.location : "..."}
-              {showChangeLocation && <RefreshCcw size={20} />}
+              <span
+                className={showChangeLocation ? "opacity-100" : "opacity-0"}
+              >
+                <RefreshCcw size={20} />
+              </span>
+              {/* {showChangeLocation && <RefreshCcw size={20} />} */}
             </div>
 
             {openLocationSelector && (
@@ -511,7 +523,7 @@ function WeatherOverview({ weather, currentVillage, setCurrentVillage }) {
 // layout dari komponen detail cuaca, dll
 function ComponentLayout({ title, children }) {
   return (
-    <div className="h-full space-y-1 bg-neutral-100 shadow-sm p-5 rounded-xl">
+    <div className="h-full sm:col-span-1 col-span-2 space-y-1 bg-neutral-100 shadow-sm p-5 rounded-xl">
       <div className="font-semibold text-lg">{title}</div>
       <div className="divide-y divide-solid h-full">{children}</div>
     </div>
@@ -544,8 +556,6 @@ function WeatherDetailItem({ Icon, title, value, unit }) {
 
 // detail cuaca
 function WeatherDetail({ weather }) {
-  console.log(weather.today?.precipitation);
-
   return (
     <ComponentLayout title={"Detail Cuaca"}>
       {/* kelembapan */}
@@ -663,40 +673,42 @@ function PrecipitationGraph({ data }) {
 
   return (
     <ComponentLayout title={"Curah hujan"}>
-      <ResponsiveLine
-        data={graphData}
-        curve="cardinal"
-        margin={{ top: 10, right: 15, bottom: 50, left: 30 }}
-        xScale={{ type: "point" }}
-        yScale={{
-          type: "linear",
-          min: "0",
-          max: "30",
-          stacked: false,
-          reverse: false,
-        }}
-        axisBottom={{
-          orient: "bottom",
-          // legend: "Waktu",
-          legendOffset: 36,
-          legendPosition: "middle",
-        }}
-        axisLeft={{
-          orient: "left",
-          // legend: "Curah hujan (mm)",
-          legendOffset: -40,
-          legendPosition: "middle",
-          tickValues: 4,
-        }}
-        pointSize={10}
-        pointColor={{ theme: "background" }}
-        pointBorderWidth={2}
-        pointBorderColor={{ from: "serieColor" }}
-        enableArea={true}
-        areaOpacity={0.5}
-        colors={["#2563eb"]}
-        useMesh={true}
-      />
+      <div className="md:h-full min-h-36">
+        <ResponsiveLine
+          data={graphData}
+          curve="cardinal"
+          margin={{ top: 10, right: 15, bottom: 50, left: 30 }}
+          xScale={{ type: "point" }}
+          yScale={{
+            type: "linear",
+            min: "0",
+            max: "30",
+            stacked: false,
+            reverse: false,
+          }}
+          axisBottom={{
+            orient: "bottom",
+            // legend: "Waktu",
+            legendOffset: 36,
+            legendPosition: "middle",
+          }}
+          axisLeft={{
+            orient: "left",
+            // legend: "Curah hujan (mm)",
+            legendOffset: -40,
+            legendPosition: "middle",
+            tickValues: 4,
+          }}
+          pointSize={10}
+          pointColor={{ theme: "background" }}
+          pointBorderWidth={2}
+          pointBorderColor={{ from: "serieColor" }}
+          enableArea={true}
+          areaOpacity={0.5}
+          colors={["#2563eb"]}
+          useMesh={true}
+        />
+      </div>
     </ComponentLayout>
   );
 }
