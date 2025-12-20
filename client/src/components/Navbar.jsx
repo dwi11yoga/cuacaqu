@@ -187,14 +187,6 @@ function MenuList({ LinkLayout }) {
         shortName={"Prediksi"}
         Icon={Calendar}
       />
-      {/* format tampilan */}
-      <LinkLayout
-        url={"/tentang"}
-        id={"Format tampilan"}
-        name={"Format tampilan"}
-        shortName={"Format"}
-        Icon={SlidersHorizontal}
-      />
       {/* tentang */}
       <LinkLayout
         url={"/tentang"}

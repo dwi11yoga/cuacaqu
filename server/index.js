@@ -6,9 +6,11 @@ const axios = require("axios");
 // import cors -> agar frontend bisa mendapat data yang dikirim oleh backend
 const cors = require("cors");
 const corsOption = {
-  origin: "http://localhost::5173/",
+  origin: "http://localhost:5173/",
+  credentials: true
 };
 app.use(cors(corsOption));
+// app.use(cors());
 
 // untuk halaman today
 app.get("/weather-today", async (req, res) => {
